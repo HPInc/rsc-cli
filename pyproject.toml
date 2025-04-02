@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "hprsctool"
+version = "0.11.0"
+description = ""
+authors = ["Diego Medaglia <diego.medaglia@hp.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+requests = "^2.32.3"
+redfish = "^3.2.6"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.3.4"
+pytest-cov = "^6.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pylint = "^3.3.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pylint]
+init-hook='import site; sys.path += site.getsitepackages()'
+disable="C0116"
+ignore-long-lines = "^\\s*#"
+
+[tool.poetry.scripts]
+hprsctool = "hprsctool.hprsctool:main"
+
