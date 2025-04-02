@@ -22,6 +22,8 @@ The tool was tested in Windows 11, and should work in Linux and MacOS as well.
 This tool requires Python 3.11 or later. You can install it from the [official website](https://www.python.org/downloads/).
 Download the latest release from this repository's release section, and extract the zip file to a folder of your choice. Run the `install.bat` script to install the tool and bundled dependencies.
 
+**Note**: installing the tool in this way will use your python installation, and not a virtual environment. If you want to use a virtual environment, you can create one using `python -m venv <env_name>` and activate it before running the install script. Refer to the [Python documentation](https://docs.python.org/3/tutorial/venv.html) for more information on how to create and use virtual environments.
+
 ### Usage
 After installation, you can run the `hprsctool` command in the command prompt or terminal. The tool has a built-in help system that you can access by running `hprsctool --help`. To get help on individual commands, run `hprsctool <command> --help`.
 
