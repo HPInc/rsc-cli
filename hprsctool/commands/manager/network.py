@@ -62,6 +62,13 @@ def get_parameters(parser: argparse.ArgumentParser) -> None:
         action="append",
         required=False,
     )
+    set_network_parser.add_argument(
+        "--mdns",
+        help="Enable or disable mDNS discovery protocol (default: enable)",
+        choices=["enable", "disable"],
+        action="store",
+        required=False,
+    )
     set_network_parser.set_defaults(func=set_network_settings)
 
 
@@ -84,6 +91,8 @@ def print_network_settings(args: argparse.Namespace):
         print(f"  {ns}")
 
     manager_network_protocol = network_ops.get_manager_network_protocol(rsc)
+    print("\nmDNS Discovery Protocol:")
+    print(f"  Enabled: {manager_network_protocol.mdns_protocol_enabled}")
     print("\nProxy settings:")
     print(f"  Enabled: {manager_network_protocol.proxy.proxy_enabled}")
     print(f"  Proxy server URI: {manager_network_protocol.proxy.proxy_server_uri}")
@@ -108,6 +117,8 @@ def set_network_settings(args: argparse.Namespace):
         raise RedfishError(
             f"Failed to update network settings: "
             f"{redfish_messages.get_error_message(response.dict)}")
+    
+    update_mdns_settings(args)
     update_proxy_settings(args)
 
     print("Network settings updated")
@@ -141,8 +152,23 @@ def update_proxy_settings(args: argparse.Namespace) -> None:
                 f"Failed to update proxy settings: "
                 f"{redfish_messages.get_error_message(response.dict)}")
 
-    print("Network settings updated")
-
+def update_mdns_settings(args: argparse.Namespace) -> None:
+    """Updates the mDNS discovery protocol setting based on the provided arguments."""
+    if not hasattr(args, "mdns") or args.mdns is None:
+        return  # Do not change mDNS if not specified
+    
+    rsc: Rsc = args.rsc
+    mdns_enabled = args.mdns == "enable"
+    manager_network_protocol = {}
+    manager_network_protocol.setdefault("Oem", {})
+    manager_network_protocol["Oem"].setdefault("HP", {})
+    manager_network_protocol["Oem"]["HP"]["mDNSDiscoveryProtocol"] = {"ProtocolEnabled": mdns_enabled}
+    response = rsc.monitor_task(
+        network_ops.set_manager_network_protocol(rsc, manager_network_protocol))
+    if response.status < 200 or response.status >= 300:
+        raise RedfishError(
+            f"Failed to update mDNS settings: "
+            f"{redfish_messages.get_error_message(response.dict)}")
 
 def update_dhcp(
     args: argparse.Namespace,
