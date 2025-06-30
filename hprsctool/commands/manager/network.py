@@ -64,7 +64,7 @@ def get_parameters(parser: argparse.ArgumentParser) -> None:
     )
     set_network_parser.add_argument(
         "--mdns",
-        help="Enable or disable mDNS discovery protocol (default: enable)",
+        help="Enable or disable mDNS discovery protocol",
         choices=["enable", "disable"],
         action="store",
         required=False,
