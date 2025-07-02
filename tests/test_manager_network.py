@@ -12,6 +12,7 @@ from hprsctool.commands.manager.network import (
     update_static_addresses,
     update_use_dns_servers,
     update_static_name_servers,
+    update_mdns_settings,
 )
 
 
@@ -77,17 +78,24 @@ def test_set_network_settings_dhcp_enable(mock_args, mock_rsc):
     mock_network_settings = MagicMock()
     mock_network_settings.dhcp = True
 
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.dict = {}
+
     with patch(
         "hprsctool.commands.manager.network.network_ops.get_manager_ethernet_interface",
         return_value=mock_network_settings,
     ), patch(
-        "hprsctool.commands.manager.network.network_ops.set_manager_ethernet_interface"
+        "hprsctool.commands.manager.network.network_ops.set_manager_ethernet_interface",
+        return_value=MagicMock()
     ) as mock_set_ethernet, patch(
-        "hprsctool.commands.manager.network.network_ops.set_manager_network_protocol"
-    ) as mock_set_protocol:
+        "hprsctool.commands.manager.network.network_ops.set_manager_network_protocol",
+        return_value=MagicMock()
+    ) as mock_set_protocol, patch.object(mock_args.rsc, "monitor_task", return_value=mock_response):
         set_network_settings(mock_args)
         mock_set_ethernet.assert_called_once()
-        mock_set_protocol.assert_called_once()
+        assert mock_set_protocol.call_count == 2
+
 
 def test_set_network_settings_dhcp_disable(mock_args, mock_rsc):
     mock_args.rsc = mock_rsc
@@ -104,17 +112,24 @@ def test_set_network_settings_dhcp_disable(mock_args, mock_rsc):
     mock_network_settings = MagicMock()
     mock_network_settings.dhcp = True
 
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.dict = {}
+
     with patch(
         "hprsctool.commands.manager.network.network_ops.get_manager_ethernet_interface",
         return_value=mock_network_settings,
     ), patch(
-        "hprsctool.commands.manager.network.network_ops.set_manager_ethernet_interface"
+        "hprsctool.commands.manager.network.network_ops.set_manager_ethernet_interface",
+        return_value=MagicMock()
     ) as mock_set_ethernet, patch(
-        "hprsctool.commands.manager.network.network_ops.set_manager_network_protocol"
-    ) as mock_set_protocol:
+        "hprsctool.commands.manager.network.network_ops.set_manager_network_protocol",
+        return_value=MagicMock()
+    ) as mock_set_protocol, patch.object(mock_args.rsc, "monitor_task", return_value=mock_response):
         set_network_settings(mock_args)
         mock_set_ethernet.assert_called_once()
-        mock_set_protocol.assert_called_once()
+        assert mock_set_protocol.call_count == 2
+
 
 def test_cannot_use_static_address_when_dhcp_is_enabled(mock_args, mock_rsc):
     mock_args.rsc = mock_rsc
@@ -133,6 +148,7 @@ def test_cannot_use_static_address_when_dhcp_is_enabled(mock_args, mock_rsc):
         with pytest.raises(ValueError):
             set_network_settings(mock_args)
 
+
 def test_cannot_set_use_dns_when_dhcp_is_disabled(mock_args, mock_rsc):
     mock_args.rsc = mock_rsc
     mock_args.dhcp = "disable"
@@ -148,10 +164,19 @@ def test_cannot_set_use_dns_when_dhcp_is_disabled(mock_args, mock_rsc):
         with pytest.raises(ValueError):
             set_network_settings(mock_args)
 
+
 def test_update_proxy_settings(mock_args):
     mock_args.proxy = "enable"
     mock_args.proxyserver = "http://proxy.example.com"
     mock_args.proxyexclude = ["localhost", "127.0.0.1"]
+
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.dict = {}
+
+    mock_rsc = MagicMock()
+    mock_args.rsc = mock_rsc
+    mock_rsc.monitor_task.return_value = mock_response
 
     with patch(
         "hprsctool.commands.manager.network.network_ops.set_manager_network_protocol"
@@ -200,3 +225,65 @@ def test_update_static_name_servers(mock_args):
 
     update_static_name_servers(mock_args, new_settings_body)
     assert ethernet_interface.STATIC_NAME_SERVERS_KEY in new_settings_body
+
+
+def test_update_mdns_settings_enable(mock_args):
+    mock_args.mdns = "enable"
+
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.dict = {}
+
+    mock_rsc = MagicMock()
+    mock_args.rsc = mock_rsc
+    mock_rsc.monitor_task.return_value = mock_response
+
+    with patch(
+        "hprsctool.commands.manager.network.network_ops.set_manager_network_protocol"
+    ) as mock_set_protocol:
+        update_mdns_settings(mock_args)
+        mock_set_protocol.assert_called_once_with(
+            mock_args.rsc, {
+                "Oem": {
+                    "HP": {
+                        "mDNSDiscoveryProtocol": {"ProtocolEnabled": True}
+                    }
+                }
+            }
+        )
+
+
+def test_update_mdns_settings_disable(mock_args):
+    mock_args.mdns = "disable"
+
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.dict = {}
+
+    mock_rsc = MagicMock()
+    mock_args.rsc = mock_rsc
+    mock_rsc.monitor_task.return_value = mock_response
+    
+    with patch(
+        "hprsctool.commands.manager.network.network_ops.set_manager_network_protocol"
+    ) as mock_set_protocol:
+        update_mdns_settings(mock_args)
+        mock_set_protocol.assert_called_once_with(
+            mock_args.rsc, {
+                "Oem": {
+                    "HP": {
+                        "mDNSDiscoveryProtocol": {"ProtocolEnabled": False}
+                    }
+                }
+            }
+        )
+
+
+def test_update_mdns_settings_not_specified(mock_args):
+    mock_args.mdns = None
+    mock_args.rsc = MagicMock()
+    with patch(
+        "hprsctool.commands.manager.network.network_ops.set_manager_network_protocol"
+    ) as mock_set_protocol:
+        update_mdns_settings(mock_args)
+        mock_set_protocol.assert_not_called()
