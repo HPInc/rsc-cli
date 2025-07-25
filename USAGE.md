@@ -36,34 +36,56 @@ hprsctool -u admin -p adminpassword -a myrscaddress system power ForceRestart
 
 ## User Management Commands
 
-### List available roles
+### List all accounts
 ```
-hprsctool -u admin -p adminpassword -a myrscaddress user list-roles
-```
-
-### List all users
-```
-hprsctool -u admin -p adminpassword -a myrscaddress user list-users
+hprsctool -u admin -p adminpassword -a myrscaddress account list
 ```
 
-### Get user details
+### Get account details
 ```
-hprsctool -u admin -p adminpassword -a myrscaddress user get-user admin
-```
-
-### Change user password
-```
-hprsctool -u admin -p adminpassword -a myrscaddress user change-password admin newpassword123
+hprsctool -u admin -p adminpassword -a myrscaddress account get <account_id>
 ```
 
-### Create new user
+### Create new account
 ```
-hprsctool -u admin -p adminpassword -a myrscaddress user create newuser newpassword Administrator
+hprsctool -u admin -p adminpassword -a myrscaddress account create <new_username> <new_password> <role_id>
 ```
 
-### Delete user
+### Change account password
 ```
-hprsctool -u admin -p adminpassword -a myrscaddress user delete newuser
+hprsctool -u admin -p adminpassword -a myrscaddress account change-password <account_id> <new_password>
+```
+
+### Delete account
+```
+hprsctool -u admin -p adminpassword -a myrscaddress account delete <account_id>
+```
+
+## Role Management Commands
+
+### List all roles
+```
+hprsctool -u admin -p adminpassword -a myrscaddress role list
+```
+
+### Get role details
+```
+hprsctool -u admin -p adminpassword -a myrscaddress role get <role_id>
+```
+
+### Create new role
+```
+hprsctool -u admin -p adminpassword -a myrscaddress role create <role_id> --assigned-privileges <priv1> <priv2> --oem-privileges <oem1> <oem2>
+```
+
+### Delete role
+```
+hprsctool -u admin -p adminpassword -a myrscaddress role delete <role_id>
+```
+
+### List available privileges
+```
+hprsctool -u admin -p adminpassword -a myrscaddress role list-privileges
 ```
 
 ## Task Commands
