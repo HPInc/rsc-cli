@@ -23,6 +23,9 @@ class Role:
     @property
     def oem_privileges(self) -> List[str]:
         return self.data.get("OemPrivileges", [])
+    @property
+    def is_predefined(self) -> bool:
+        return self.data.get("IsPredefined", False)
 
 class RoleCollection:
     """Class defining a collection of Roles"""
