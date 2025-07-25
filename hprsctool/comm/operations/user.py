@@ -54,6 +54,11 @@ def change_user_password(rsc: Rsc, account_id: str, new_password: str) -> User:
     return get_user(rsc, account_id)
 
 
+def delete_user(rsc: Rsc, account_id: str) -> None:
+    """Delete a user account"""
+    rsc.perform_redfish_delete(f"/redfish/v1/AccountService/Accounts/{account_id}")
+
+
 def get_user(rsc: Rsc, account_id: str) -> User:
     """Get a specific user account"""
     

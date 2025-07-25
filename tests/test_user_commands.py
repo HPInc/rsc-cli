@@ -2,9 +2,16 @@
 
 from unittest.mock import patch, MagicMock
 import pytest
-from hprsctool.commands.user import list_roles, create_user, change_password, list_users, get_user
 from hprsctool.comm.remote_system_controller import RedfishError
 from hprsctool.models.user import Role, User
+from hprsctool.commands.user import (
+    list_roles,
+    create_user,
+    change_password,
+    list_users,
+    get_user,
+    delete_user
+)
 
 
 @pytest.fixture
@@ -189,6 +196,44 @@ def test_change_password_missing_params(mock_rsc, capsys):
     args.new_password = "newpass"
     
     change_password(args)
+    
+    captured = capsys.readouterr()
+    assert "Error: Account ID is required" in captured.out
+
+
+@patch('hprsctool.commands.user.user_ops.delete_user')
+def test_delete_user_success(mock_delete_user, mock_args, mock_rsc, capsys):
+    """Test successful user deletion"""
+    mock_args.rsc = mock_rsc
+    # delete_user operation returns None on success
+    mock_delete_user.return_value = None
+    
+    delete_user(mock_args)
+    
+    captured = capsys.readouterr()
+    assert "User account deleted successfully: testuser" in captured.out
+    mock_delete_user.assert_called_once_with(mock_rsc, "testuser")
+
+
+@patch('hprsctool.commands.user.user_ops.delete_user')
+def test_delete_user_error(mock_delete_user, mock_args, mock_rsc, capsys):
+    """Test user deletion with error"""
+    mock_args.rsc = mock_rsc
+    mock_delete_user.side_effect = RedfishError("Account not found")
+    
+    delete_user(mock_args)
+    
+    captured = capsys.readouterr()
+    assert "Error deleting user: Account not found" in captured.out
+
+
+def test_delete_user_missing_params(mock_rsc, capsys):
+    """Test delete user with missing parameters"""
+    args = MagicMock()
+    args.rsc = mock_rsc
+    args.account_id = ""
+    
+    delete_user(args)
     
     captured = capsys.readouterr()
     assert "Error: Account ID is required" in captured.out

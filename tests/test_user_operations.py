@@ -2,9 +2,17 @@
 
 from unittest.mock import MagicMock
 import pytest
-from hprsctool.comm.operations.user import get_roles, get_role_ids, create_user, change_user_password, get_user, get_users
 from hprsctool.comm.remote_system_controller import RedfishError
 from hprsctool.models.user import Role, User
+from hprsctool.comm.operations.user import(
+    get_roles,
+    get_role_ids,
+    create_user,
+    change_user_password,
+    get_user,
+    get_users,
+    delete_user
+)
 
 
 @pytest.fixture
@@ -264,3 +272,32 @@ def test_get_users(mock_rsc):
     assert results[0].user_id == "admin"
     assert results[1].user_id == "testuser"
     assert mock_rsc.perform_redfish_get.call_count == 3
+
+
+def test_delete_user_success(mock_rsc):
+    """Test successful user deletion"""
+    # Mock the DELETE response (should be empty/None for success)
+    delete_response = MagicMock()
+    delete_response.dict = None  # Empty response indicates success
+    mock_rsc.perform_redfish_delete.return_value = delete_response
+    
+    # Should not raise any exception
+    delete_user(mock_rsc, "testuser")
+    
+    mock_rsc.perform_redfish_delete.assert_called_once_with(
+        "/redfish/v1/AccountService/Accounts/testuser"
+    )
+
+
+def test_delete_user_error(mock_rsc):
+    """Test user deletion with error"""
+    # Mock a RedfishError being raised
+    mock_rsc.perform_redfish_delete.side_effect = RedfishError("Account not found")
+    
+    with pytest.raises(RedfishError) as exc_info:
+        delete_user(mock_rsc, "testuser")
+    
+    assert "Account not found" in str(exc_info.value)
+    mock_rsc.perform_redfish_delete.assert_called_once_with(
+        "/redfish/v1/AccountService/Accounts/testuser"
+    )

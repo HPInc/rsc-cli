@@ -36,6 +36,11 @@ def get_parameters(subparsers: argparse._SubParsersAction) -> None:
     change_password_parser.add_argument("account_id", help="Account ID to change password for", action="store")
     change_password_parser.add_argument("new_password", help="New password", action="store")
     change_password_parser.set_defaults(func=change_password)
+    
+    # Delete user command
+    delete_user_parser = subparsers.add_parser("delete", help="Delete a user account")
+    delete_user_parser.add_argument("account_id", help="Account ID to delete", action="store")
+    delete_user_parser.set_defaults(func=delete_user)
 
 
 def list_roles(args):
@@ -137,3 +142,18 @@ def get_user(args):
     except RedfishError as e:
         error_msg = str(e)
         print(f"Error getting user: {error_msg}")
+
+
+def delete_user(args):
+    """Delete a user account"""
+    # Validate that account ID is provided
+    if not args.account_id:
+        print("Error: Account ID is required")
+        return
+    
+    try:
+        user_ops.delete_user(args.rsc, args.account_id)
+        print(f"User account deleted successfully: {args.account_id}")
+    except RedfishError as e:
+        error_msg = str(e)
+        print(f"Error deleting user: {error_msg}")
