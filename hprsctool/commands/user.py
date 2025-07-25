@@ -76,8 +76,6 @@ def create_user(args):
         print(f"  ID: {user.user_id}")
         print(f"  Username: {user.username}")
         print(f"  Role ID: {user.role_id}")
-        if user.account_types:
-            print(f"  Account Types: {', '.join(user.account_types)}")
     except RedfishError as e:
         error_msg = str(e)
         print(f"Error creating user: {error_msg}")
