@@ -8,7 +8,8 @@ from hprsctool.comm.operations.account import (
     create_account,
     change_account_password,
     get_account,
-    delete_account
+    delete_account,
+    get_accounts
 )
 
 @pytest.fixture
@@ -112,3 +113,45 @@ def test_delete_account_error(mock_rsc):
     mock_rsc.perform_redfish_delete.assert_called_once_with(
         "/redfish/v1/AccountService/Accounts/testuser"
     )
+
+def test_get_accounts_success(mock_rsc):
+    # Mock UserCollection with two members
+    user_collection_response = MagicMock()
+    user_collection_response.dict = {
+        "Members": [
+            {"@odata.id": "/redfish/v1/AccountService/Accounts/user1"},
+            {"@odata.id": "/redfish/v1/AccountService/Accounts/user2"}
+        ]
+    }
+    user1_response = MagicMock()
+    user1_response.dict = {
+        "Id": "user1",
+        "UserName": "user1",
+        "RoleId": "ReadOnly"
+    }
+    user2_response = MagicMock()
+    user2_response.dict = {
+        "Id": "user2",
+        "UserName": "user2",
+        "RoleId": "Administrator"
+    }
+    mock_rsc.perform_redfish_get.side_effect = [user_collection_response, user1_response, user2_response]
+    users = get_accounts(mock_rsc)
+    assert len(users) == 2
+    assert users[0].user_id == "user1"
+    assert users[1].user_id == "user2"
+
+
+def test_get_accounts_empty(mock_rsc):
+    user_collection_response = MagicMock()
+    user_collection_response.dict = {"Members": []}
+    mock_rsc.perform_redfish_get.return_value = user_collection_response
+    users = get_accounts(mock_rsc)
+    assert users == []
+
+
+def test_get_accounts_redfish_error(mock_rsc):
+    mock_rsc.perform_redfish_get.side_effect = RedfishError("fail")
+    with pytest.raises(RedfishError) as exc_info:
+        get_accounts(mock_rsc)
+    assert "fail" in str(exc_info.value)

@@ -1,15 +1,17 @@
 """Tests for role commands"""
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 import pytest
 from hprsctool.comm.remote_system_controller import RedfishError
 from hprsctool.models.role import Role
 from hprsctool.commands.role import (
+    get_parameters,
     list_roles,
     get_role,
     create_role,
     delete_role,
-    list_privileges
+    list_privileges,
+    print_role_privileges
 )
 
 @pytest.fixture
@@ -250,3 +252,49 @@ def test_list_privileges_with_error(mock_get_role_privileges, mock_args, capsys)
 
     captured = capsys.readouterr()
     assert "Error getting privileges: Privileges not found" in captured.out
+
+
+@patch('argparse._SubParsersAction')
+def test_get_parameters_creates_subparsers(mock_subparsers):
+    mock_action = MagicMock()
+    mock_subparsers.return_value = mock_action
+    get_parameters(mock_action)
+    assert mock_action.required is True
+    expected = [
+        'list', 'get', 'create', 'delete', 'list-privileges'
+    ]
+    added = [call[0][0] for call in mock_action.add_parser.call_args_list]
+    for cmd in expected:
+        assert cmd in added
+
+
+@patch('argparse._SubParsersAction')
+def test_get_parameters_sets_defaults(mock_subparsers):
+    mock_action = MagicMock()
+    parser_map = {}
+    def add_parser_side_effect(name, **kwargs):
+        parser = MagicMock()
+        parser_map[name] = parser
+        return parser
+    mock_action.add_parser.side_effect = add_parser_side_effect
+    mock_subparsers.return_value = mock_action
+    get_parameters(mock_action)
+    for cmd in ['list', 'get', 'create', 'delete', 'list-privileges']:
+        assert parser_map[cmd].set_defaults.called
+
+
+@patch('hprsctool.commands.role.role_ops.get_roles', side_effect=RedfishError("fail"))
+def test_list_roles_redfish_error(mock_get_roles, mock_args, capsys):
+    list_roles(mock_args)
+    captured = capsys.readouterr()
+    assert "Error listing roles: fail" in captured.out
+
+
+def test_print_role_privileges_none(capsys):
+    role = MagicMock()
+    role.assigned_privileges = None
+    role.oem_privileges = None
+    print_role_privileges(role)
+    captured = capsys.readouterr()
+    assert "Assigned Privileges: None" in captured.out
+    assert "OEM Privileges: None" in captured.out
