@@ -3,8 +3,10 @@ if (Test-Path -Path '.\dist\hprsctool*.whl') {
     $wheelPath = $wheel.FullName
     $wheelName = $wheel.Name
     
-    Remove-Item dist\wheels -Force -Recurse
-    mkdir dist\wheels
+    if (Test-Path -Path '.\dist\wheels') {
+        Remove-Item '.\dist\wheels' -Force -Recurse | Out-Null
+    }
+    New-Item -ItemType Directory -Path '.\dist\wheels' | Out-Null
 
     $versionLine = Select-String -Path "pyproject.toml" -Pattern 'version = "([^"]+)"'
     $version = $versionLine.Matches.Groups[1].Value
