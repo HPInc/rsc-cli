@@ -6,6 +6,7 @@ import sys
 from .commands.manager import manager
 from .commands import system
 from .commands import task
+from .commands import user
 from .comm import remote_system_controller
 
 VERSION = "0.11.0"
@@ -53,6 +54,10 @@ def main():
     subparser = top_level_subparsers.add_parser("tasks", help="Task commands")
     task_subparsers = subparser.add_subparsers()
     task.get_parameters(task_subparsers)
+
+    subparser = top_level_subparsers.add_parser("user", help="User management commands")
+    user_subparsers = subparser.add_subparsers()
+    user.get_parameters(user_subparsers)
 
     args = argparser.parse_args(remaining_args)
     config = remote_system_controller.RedfishConfig(
