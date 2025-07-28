@@ -2,13 +2,13 @@
 
 from unittest.mock import MagicMock
 import pytest
-from hprsctool.models.role import Role
 from hprsctool.comm.operations.role import(
     get_roles,
     get_role_ids,
-    get_role_privileges,
     create_role,
-    delete_role
+    delete_role,
+    get_role_privileges,
+    update_role_privileges,
 )
 
 @pytest.fixture
@@ -126,6 +126,49 @@ def test_create_role(mock_rsc):
     }
     mock_rsc.perform_redfish_post.assert_called_once_with("/redfish/v1/AccountService/Roles", expected_data)
 
+def test_update_role_privileges_both(mock_rsc):
+    role_id = "TestRole"
+    assigned_privileges = ["Login", "ConfigureManager"]
+    oem_privileges = ["KVM", "VirtualMedia"]
+    
+    update_role_privileges(mock_rsc, role_id, assigned_privileges, oem_privileges)
+    
+    expected_data = {
+        "AssignedPrivileges": ["Login", "ConfigureManager"],
+        "OemPrivileges": ["KVM", "VirtualMedia"]
+    }
+    mock_rsc.perform_redfish_patch.assert_called_once_with(
+        "/redfish/v1/AccountService/Roles/TestRole", 
+        expected_data
+    )
+
+def test_update_role_privileges_assigned_only(mock_rsc):
+    role_id = "TestRole"
+    assigned_privileges = ["Login", "ConfigureManager"]
+    
+    update_role_privileges(mock_rsc, role_id, assigned_privileges, None)
+    
+    expected_data = {
+        "AssignedPrivileges": ["Login", "ConfigureManager"]
+    }
+    mock_rsc.perform_redfish_patch.assert_called_once_with(
+        "/redfish/v1/AccountService/Roles/TestRole", 
+        expected_data
+    )
+
+def test_update_role_privileges_oem_only(mock_rsc):
+    role_id = "TestRole"
+    oem_privileges = ["KVM", "VirtualMedia"]
+    
+    update_role_privileges(mock_rsc, role_id, None, oem_privileges)
+    
+    expected_data = {
+        "OemPrivileges": ["KVM", "VirtualMedia"]
+    }
+    mock_rsc.perform_redfish_patch.assert_called_once_with(
+        "/redfish/v1/AccountService/Roles/TestRole", 
+        expected_data
+    )
 
 def test_delete_role(mock_rsc):
     role_id = "TestRole"

@@ -27,6 +27,15 @@ def get_parameters(subparsers: argparse._SubParsersAction) -> None:
                                    help="List of OEM privileges")
     create_role_parser.set_defaults(func=create_role)
 
+    # Update role command
+    update_role_parser = subparsers.add_parser("update", help="Update role privileges")
+    update_role_parser.add_argument("role_id", help="Role ID to update")
+    update_role_parser.add_argument("--assigned-privileges", nargs='+', 
+                                   help="List of assigned privileges (optional)")
+    update_role_parser.add_argument("--oem-privileges", nargs='+',
+                                   help="List of OEM privileges (optional)")
+    update_role_parser.set_defaults(func=update_role)
+
     # Delete role command
     delete_role_parser = subparsers.add_parser("delete", help="Delete an existing role")
     delete_role_parser.add_argument("role_id", help="Role ID to delete")
@@ -78,18 +87,55 @@ def create_role(args):
         if not args.role_id:
             print("Error: Role ID is required")
             return
-        if not args.assigned_privileges:
+
+        assigned_privileges = getattr(args, 'assigned_privileges', None)
+        oem_privileges = getattr(args, 'oem_privileges', None)
+
+        # Remove empty strings from the privileges lists
+        if assigned_privileges:
+            assigned_privileges = [p for p in assigned_privileges if p]
+        if oem_privileges:
+            oem_privileges = [p for p in oem_privileges if p]
+
+        if not assigned_privileges:
             print("Error: Assigned privileges are required")
             return
-        if not args.oem_privileges:
+        if not oem_privileges:
             print("Error: OEM privileges are required")
             return
-            
-        role_ops.create_role(args.rsc, args.role_id, getattr(args, 'assigned_privileges'), getattr(args, 'oem_privileges'))
+
+        role_ops.create_role(args.rsc, args.role_id, assigned_privileges, oem_privileges)
         print(f"Role '{args.role_id}' created successfully")
     except RedfishError as e:
         error_msg = str(e)
         print(f"Error creating role: {error_msg}")
+
+
+def update_role(args):
+    """Update role privileges"""
+    try:
+        if not args.role_id:
+            print("Error: Role ID is required")
+            return
+
+        assigned_privileges = getattr(args, 'assigned_privileges', None)
+        oem_privileges = getattr(args, 'oem_privileges', None)
+
+        # Remove empty strings from the privileges lists
+        if assigned_privileges:
+            assigned_privileges = [p for p in assigned_privileges if p]
+        if oem_privileges:
+            oem_privileges = [p for p in oem_privileges if p]
+
+        if assigned_privileges is None and oem_privileges is None:
+            print("Error: At least one of --assigned-privileges or --oem-privileges must be provided")
+            return
+
+        role_ops.update_role_privileges(args.rsc, args.role_id, assigned_privileges, oem_privileges)
+        print(f"Role '{args.role_id}' updated successfully")
+    except RedfishError as e:
+        error_msg = str(e)
+        print(f"Error updating role: {error_msg}")
 
 
 def delete_role(args):

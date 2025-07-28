@@ -25,6 +25,15 @@ def change_account_password(rsc: Rsc, account_id: str, new_password: str) -> Use
     rsc.perform_redfish_patch(f"/redfish/v1/AccountService/Accounts/{account_id}", body)
     return get_account(rsc, account_id)
 
+def change_account_role(rsc: Rsc, account_id: str, role_id: str) -> User:
+    """Change user role"""
+    available_role_ids = get_role_ids(rsc)
+    if role_id not in available_role_ids:
+        raise RedfishError(f"Role '{role_id}' not found. Available roles: {', '.join(available_role_ids)}")
+    body = {"RoleId": role_id}
+    rsc.perform_redfish_patch(f"/redfish/v1/AccountService/Accounts/{account_id}", body)
+    return get_account(rsc, account_id)
+
 def delete_account(rsc: Rsc, account_id: str) -> None:
     """Delete a user account"""
     rsc.perform_redfish_delete(f"/redfish/v1/AccountService/Accounts/{account_id}")

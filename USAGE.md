@@ -56,6 +56,11 @@ hprsctool -u admin -p adminpassword -a myrscaddress account create <new_username
 hprsctool -u admin -p adminpassword -a myrscaddress account change-password <account_id> <new_password>
 ```
 
+### Change account role
+```
+hprsctool -u admin -p adminpassword -a myrscaddress account change-role <account_id> <role_id>
+```
+
 ### Delete account
 ```
 hprsctool -u admin -p adminpassword -a myrscaddress account delete <account_id>
@@ -76,6 +81,11 @@ hprsctool -u admin -p adminpassword -a myrscaddress role get <role_id>
 ### Create new role
 ```
 hprsctool -u admin -p adminpassword -a myrscaddress role create <role_id> --assigned-privileges <priv1> <priv2> --oem-privileges <oem1> <oem2>
+```
+
+### Update role privileges
+```
+hprsctool -u admin -p adminpassword -a myrscaddress role update <role_id> --assigned-privileges <priv1> <priv2> --oem-privileges <oem1> <oem2>
 ```
 
 ### Delete role

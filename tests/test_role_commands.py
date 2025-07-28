@@ -9,6 +9,7 @@ from hprsctool.commands.role import (
     list_roles,
     get_role,
     create_role,
+    update_role,
     delete_role,
     list_privileges,
     print_role_privileges
@@ -298,3 +299,100 @@ def test_print_role_privileges_none(capsys):
     captured = capsys.readouterr()
     assert "Assigned Privileges: None" in captured.out
     assert "OEM Privileges: None" in captured.out
+
+
+@patch('hprsctool.commands.role.role_ops.update_role_privileges')
+def test_update_role_success_both_privileges(mock_update_role, mock_args, capsys):
+    mock_args.role_id = "TestRole"
+    mock_args.assigned_privileges = ["Login", "ConfigureManager"]
+    mock_args.oem_privileges = ["KVM", "VirtualMedia"]
+
+    update_role(mock_args)
+    
+    captured = capsys.readouterr()
+    assert "Role 'TestRole' updated successfully" in captured.out
+    mock_update_role.assert_called_once_with(
+        mock_args.rsc, 
+        "TestRole", 
+        ["Login", "ConfigureManager"], 
+        ["KVM", "VirtualMedia"]
+    )
+
+
+@patch('hprsctool.commands.role.role_ops.update_role_privileges')
+def test_update_role_success_assigned_only(mock_update_role, mock_args, capsys):
+    mock_args.role_id = "TestRole"
+    mock_args.assigned_privileges = ["Login", "ConfigureManager"]
+    mock_args.oem_privileges = None
+
+    update_role(mock_args)
+    
+    captured = capsys.readouterr()
+    assert "Role 'TestRole' updated successfully" in captured.out
+    mock_update_role.assert_called_once_with(
+        mock_args.rsc, 
+        "TestRole", 
+        ["Login", "ConfigureManager"], 
+        None
+    )
+
+
+@patch('hprsctool.commands.role.role_ops.update_role_privileges')
+def test_update_role_success_oem_only(mock_update_role, mock_args, capsys):
+    mock_args.role_id = "TestRole"
+    mock_args.assigned_privileges = None
+    mock_args.oem_privileges = ["KVM", "VirtualMedia"]
+
+    update_role(mock_args)
+    
+    captured = capsys.readouterr()
+    assert "Role 'TestRole' updated successfully" in captured.out
+    mock_update_role.assert_called_once_with(
+        mock_args.rsc, 
+        "TestRole", 
+        None, 
+        ["KVM", "VirtualMedia"]
+    )
+
+
+@patch('hprsctool.commands.role.role_ops.update_role_privileges')
+def test_update_role_missing_role_id(mock_update_role, mock_rsc, capsys):
+    args = MagicMock()
+    args.rsc = mock_rsc
+    args.role_id = ""
+    args.assigned_privileges = ["Login"]
+    args.oem_privileges = ["KVM"]
+
+    update_role(args)
+    
+    captured = capsys.readouterr()
+    assert "Error: Role ID is required" in captured.out
+    mock_update_role.assert_not_called()
+
+
+@patch('hprsctool.commands.role.role_ops.update_role_privileges')
+def test_update_role_no_privileges(mock_update_role, mock_rsc, capsys):
+    args = MagicMock()
+    args.rsc = mock_rsc
+    args.role_id = "TestRole"
+    args.assigned_privileges = None
+    args.oem_privileges = None
+
+    update_role(args)
+    
+    captured = capsys.readouterr()
+    assert "Error: At least one of --assigned-privileges or --oem-privileges must be provided" in captured.out
+    mock_update_role.assert_not_called()
+
+
+@patch('hprsctool.commands.role.role_ops.update_role_privileges')
+def test_update_role_error(mock_update_role, mock_args, capsys):
+    mock_args.role_id = "TestRole"
+    mock_args.assigned_privileges = ["Login"]
+    mock_args.oem_privileges = ["KVM"]
+    mock_update_role.side_effect = RedfishError("Role not found")
+
+    update_role(mock_args)
+    
+    captured = capsys.readouterr()
+    assert "Error updating role: Role not found" in captured.out

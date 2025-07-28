@@ -10,7 +10,8 @@ from hprsctool.commands.account import (
     create_account,
     change_password,
     get_account,
-    delete_account
+    delete_account,
+    change_role
 )
 
 @pytest.fixture
@@ -60,6 +61,24 @@ def test_change_password_success(mock_change_password, mock_args, capsys):
     change_password(mock_args)
     captured = capsys.readouterr()
     assert "Password changed successfully for account: testuser" in captured.out
+
+@patch('hprsctool.commands.account.account_ops.change_account_role')
+def test_change_role_success(mock_change_role, mock_args, capsys):
+    mock_args.role_id = "Administrator"
+    user = User({
+        "Id": "testuser", 
+        "UserName": "testuser",
+        "RoleId": "Administrator"
+    })
+    mock_change_role.return_value = user
+
+    change_role(mock_args)
+    
+    captured = capsys.readouterr()
+    assert "Role changed successfully for account: testuser" in captured.out
+    assert "Username: testuser" in captured.out
+    assert "New Role ID: Administrator" in captured.out
+    mock_change_role.assert_called_once_with(mock_args.rsc, "testuser", "Administrator")
 
 @patch('hprsctool.commands.account.account_ops.change_account_password')
 def test_change_password_error(mock_change_password, mock_args, capsys):
@@ -262,3 +281,57 @@ def test_change_password_redfish_error(mock_change_password, mock_args, capsys):
     change_password(mock_args)
     captured = capsys.readouterr()
     assert "Error changing password: fail" in captured.out
+
+@patch('hprsctool.commands.account.account_ops.change_account_role')
+def test_change_role_success(mock_change_role, mock_args, capsys):
+    mock_args.role_id = "Administrator"
+    user = User({
+        "Id": "testuser", 
+        "UserName": "testuser",
+        "RoleId": "Administrator"
+    })
+    mock_change_role.return_value = user
+
+    change_role(mock_args)
+    
+    captured = capsys.readouterr()
+    assert "Role changed successfully for account: testuser" in captured.out
+    assert "Username: testuser" in captured.out
+    assert "New Role ID: Administrator" in captured.out
+    mock_change_role.assert_called_once_with(mock_args.rsc, "testuser", "Administrator")
+
+@patch('hprsctool.commands.account.account_ops.change_account_role')
+def test_change_role_missing_account_id(mock_change_role, mock_rsc, capsys):
+    args = MagicMock()
+    args.rsc = mock_rsc
+    args.account_id = ""
+    args.role_id = "Administrator"
+
+    change_role(args)
+    
+    captured = capsys.readouterr()
+    assert "Error: Account ID is required" in captured.out
+    mock_change_role.assert_not_called()
+
+@patch('hprsctool.commands.account.account_ops.change_account_role')
+def test_change_role_missing_role_id(mock_change_role, mock_rsc, capsys):
+    args = MagicMock()
+    args.rsc = mock_rsc
+    args.account_id = "testuser"
+    args.role_id = ""
+
+    change_role(args)
+    
+    captured = capsys.readouterr()
+    assert "Error: Role ID is required" in captured.out
+    mock_change_role.assert_not_called()
+
+@patch('hprsctool.commands.account.account_ops.change_account_role')
+def test_change_role_error(mock_change_role, mock_args, capsys):
+    mock_args.role_id = "InvalidRole"
+    mock_change_role.side_effect = RedfishError("Role 'InvalidRole' not found")
+
+    change_role(mock_args)
+    
+    captured = capsys.readouterr()
+    assert "Error changing role: Role 'InvalidRole' not found" in captured.out

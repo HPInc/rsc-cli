@@ -6,6 +6,7 @@ from hprsctool.comm.remote_system_controller import RedfishError
 from hprsctool.models.account import User
 from hprsctool.comm.operations.account import (
     create_account,
+    change_account_role,
     change_account_password,
     get_account,
     delete_account,
@@ -79,6 +80,50 @@ def test_change_account_password(mock_rsc):
     mock_rsc.perform_redfish_get.assert_called_once_with(
         "/redfish/v1/AccountService/Accounts/testuser"
     )
+
+def test_change_account_role_success(mock_rsc):
+    # Mock role validation - get available roles
+    mock_rsc.perform_redfish_get.side_effect = [
+        MagicMock(dict={
+            "Members": [
+                {"@odata.id": "/redfish/v1/AccountService/Roles/Administrator"},
+                {"@odata.id": "/redfish/v1/AccountService/Roles/ReadOnly"}
+            ]
+        }),
+        MagicMock(dict={"RoleId": "Administrator"}),
+        MagicMock(dict={"RoleId": "ReadOnly"}),
+        # Mock get_account response after role change
+        MagicMock(dict={
+            "Id": "testuser",
+            "UserName": "testuser",
+            "RoleId": "Administrator"
+        })
+    ]
+
+    result = change_account_role(mock_rsc, "testuser", "Administrator")
+
+    assert isinstance(result, User)
+    assert result.role_id == "Administrator"
+    mock_rsc.perform_redfish_patch.assert_called_once_with(
+        "/redfish/v1/AccountService/Accounts/testuser",
+        {"RoleId": "Administrator"}
+    )
+
+def test_change_account_role_invalid_role(mock_rsc):
+    # Mock role validation - get available roles
+    mock_rsc.perform_redfish_get.side_effect = [
+        MagicMock(dict={
+            "Members": [
+                {"@odata.id": "/redfish/v1/AccountService/Roles/ReadOnly"}
+            ]
+        }),
+        MagicMock(dict={"RoleId": "ReadOnly"})
+    ]
+
+    with pytest.raises(RedfishError) as exc_info:
+        change_account_role(mock_rsc, "testuser", "InvalidRole")
+    assert "Role 'InvalidRole' not found" in str(exc_info.value)
+    assert "ReadOnly" in str(exc_info.value)
 
 def test_get_account(mock_rsc):
     user_response = MagicMock()

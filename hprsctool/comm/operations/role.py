@@ -34,6 +34,17 @@ def create_role(rsc: Rsc, role_id: str, assigned_privileges: List[str], oem_priv
     }
     rsc.perform_redfish_post("/redfish/v1/AccountService/Roles", role_data)
 
+def update_role_privileges(rsc: Rsc, role_id: str, assigned_privileges: List[str] = None, oem_privileges: List[str] = None) -> None:
+    """Update an existing role's privileges"""
+    role_data = {}
+    if assigned_privileges is not None:
+        role_data["AssignedPrivileges"] = assigned_privileges
+    if oem_privileges is not None:
+        role_data["OemPrivileges"] = oem_privileges
+
+    role_url = f"/redfish/v1/AccountService/Roles/{role_id}"
+    rsc.perform_redfish_patch(role_url, role_data)
+
 def delete_role(rsc: Rsc, role_id: str) -> None:
     """Delete an existing role"""
     role_url = f"/redfish/v1/AccountService/Roles/{role_id}"

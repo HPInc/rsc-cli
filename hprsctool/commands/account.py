@@ -31,6 +31,12 @@ def get_parameters(subparsers: argparse._SubParsersAction) -> None:
     change_password_parser.add_argument("new_password", help="New password", action="store")
     change_password_parser.set_defaults(func=change_password)
 
+    # Change role command
+    change_role_parser = subparsers.add_parser("change-role", help="Change user role")
+    change_role_parser.add_argument("account_id", help="Account ID to change role for", action="store")
+    change_role_parser.add_argument("role_id", help="New role ID", action="store")
+    change_role_parser.set_defaults(func=change_role)
+
     # Delete account command
     delete_account_parser = subparsers.add_parser("delete", help="Delete a user account")
     delete_account_parser.add_argument("account_id", help="Account ID to delete", action="store")
@@ -113,6 +119,24 @@ def change_password(args):
     except RedfishError as e:
         error_msg = str(e)
         print(f"Error changing password: {error_msg}")
+
+
+def change_role(args):
+    """Change user role"""
+    if not args.account_id:
+        print("Error: Account ID is required")
+        return
+    if not args.role_id:
+        print("Error: Role ID is required")
+        return
+    try:
+        user = account_ops.change_account_role(args.rsc, args.account_id, args.role_id)
+        print(f"Role changed successfully for account: {args.account_id}")
+        print(f"  Username: {user.username}")
+        print(f"  New Role ID: {user.role_id}")
+    except RedfishError as e:
+        error_msg = str(e)
+        print(f"Error changing role: {error_msg}")
 
 
 def delete_account(args):
