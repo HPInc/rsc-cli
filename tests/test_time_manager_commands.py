@@ -27,7 +27,11 @@ def test_get_parameters(mock_parser):
         action="store",
     )
     set_time_parser.add_argument.assert_any_call(
-        "--offset", help="Time offset in format [+-]HH:MM", action="store"
+        "--offset", 
+        help=("Time offset in format '[+-]HH:MM'. "
+              "Please use '--offset=<value> if offset contains a minus sign"),
+        action="store",
+        type=str,
     )
     set_time_parser.add_argument.assert_any_call(
         "--ntp",
@@ -139,7 +143,7 @@ def test_set_time_manual_time_ntp_disabled(mock_args, mock_rsc):
             mock_rsc,
             {
                 "DateTime": "2024-06-07T12:29:01-03:00",
-                "DateTimeOffset": "+03:00",
+                "DateTimeLocalOffset": "+03:00",
             },
         )
 

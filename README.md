@@ -19,44 +19,35 @@ The tool was tested in Windows 11, and should work in Linux and MacOS as well.
     - Certificate management
 
 ### Installation
-This tool requires Python 3.11 or later. You can install it from the [official website](https://www.python.org/downloads/).
-Download the latest release from this repository's release section, and extract the zip file to a folder of your choice. Run the `install.bat` script to install the tool and bundled dependencies.
 
-**Note**: installing the tool in this way will use your python installation, and not a virtual environment. If you want to use a virtual environment, you can create one using `python -m venv <env_name>` and activate it before running the install script. Refer to the [Python documentation](https://docs.python.org/3/tutorial/venv.html) for more information on how to create and use virtual environments.
+#### Option 1: Download Precompiled Release (Recommended)
+Download the latest release from the [GitHub Releases page](../../releases). Extract the zip file to a folder of your choice and run the `install.bat` script to install the tool and bundled dependencies.
+
+**Note**: This installation method uses your system Python installation. If you prefer to use a virtual environment, create one using `python -m venv <env_name>` and activate it before running the install script.
+
+#### Option 2: Build from Source
+If you need to build from source or want to contribute to the project, see [BUILD.md](BUILD.md) for detailed build instructions.
 
 ### Usage
-After installation, you can run the `hprsctool` command in the command prompt or terminal. The tool has a built-in help system that you can access by running `hprsctool --help`. To get help on individual commands, run `hprsctool <command> --help`.
 
-Examples:
-- Get host workstation information:
+The tool provides a command-line interface with built-in help. After installation, you can run:
+
 ```shell
-hprsctool -u admin -p adminpassword -a myrscaddress system get
-```
-- Power off (forced) the host workstation:
-```shell
-hprsctool -u admin -p adminpassword -a myrscaddress system power ForceOff
-```
-- Get RSC network settings:
-```shell
-hprsctool -u admin -p adminpassword -a myrscaddress manager network get
-```
-- Update the RSC firmware:
-```shell
-hprsctool -u admin -p adminpassword -a myrscaddress manager update \path\to\firmware.xz 
+hprsctool --help
 ```
 
-### Create Windows bundle
-1. Install Python 3.12 or later
-2. Install poetry:
-```shell
-pip install poetry
-```
-3. Clone the repository:
-```shell
-git clone
-```
-3. Build the project using poetry:
-```shell
-poetry build
-```
-4. In Windows power shell, invoke the createbundle\createbundle.ps1 script to create a zip file with an install script and all dependencies packed as wheels.
+For detailed usage examples and all available commands, see [USAGE.md](USAGE.md).
+
+#### Quick Examples:
+- Get system information: `hprsctool -u admin -p adminpassword -a myrscaddress system get`
+- Power operations: `hprsctool -u admin -p adminpassword -a myrscaddress system power On`
+- Network settings: `hprsctool -u admin -p adminpassword -a myrscaddress manager network get`
+
+### Requirements
+
+- Python 3.12 or later (download from [python.org](https://www.python.org/downloads/))
+
+### Documentation
+
+- **[USAGE.md](USAGE.md)** - Comprehensive usage examples and command reference
+- **[BUILD.md](BUILD.md)** - Build instructions for developers and contributors
