@@ -8,11 +8,13 @@ from redfish.rest.v1 import RestResponse as RedfishRestResponse
 from ...comm.remote_system_controller import RedfishError, Rsc
 from ...comm import redfish_messages
 from ...models.manager import Manager
+from .collection import get_default_uri
 
 
 def get_manager(rsc: Rsc) -> Manager:
     """Get the RSC manager information"""
-    return Manager(rsc.perform_redfish_get("/redfish/v1/Managers/1").dict)
+    manager_uri = get_default_uri(rsc, "/redfish/v1/Managers")
+    return Manager(rsc.perform_redfish_get(manager_uri).dict)
 
 
 def change_admin_password(rsc: Rsc, new_password: str):
@@ -23,16 +25,18 @@ def change_admin_password(rsc: Rsc, new_password: str):
 
 def restart(rsc: Rsc):
     """Restart the RSC"""
+    manager_uri = get_default_uri(rsc, "/redfish/v1/Managers")
     rsc.perform_redfish_post(
-        "/redfish/v1/Managers/1/Actions/Manager.Reset",
+        f"{manager_uri}/Actions/Manager.Reset",
         {"ResetType": "ForceRestart"},
     )
 
 
 def factory_reset(rsc: Rsc):
     """Factory-reset the RSC"""
+    manager_uri = get_default_uri(rsc, "/redfish/v1/Managers")
     rsc.perform_redfish_post(
-        "/redfish/v1/Managers/1/Actions/Manager.ResetToDefaults",
+        f"{manager_uri}/Actions/Manager.ResetToDefaults",
         {"ResetToDefaultsType": "ResetAll"},
     )
 
@@ -43,6 +47,15 @@ def update_rsc_firmware(rsc: Rsc, fw_file_path: str) -> RedfishRestResponse:
     if not Path(fw_file_path).exists():
         raise ValueError(f"Firmware file {fw_file_path} not found")
 
+    update_service_uri = "/redfish/v1/UpdateService"
+    update_service = rsc.perform_redfish_get(update_service_uri).dict
+    upload_uri = (
+        update_service.get("MultipartHttpPushUri")
+        if isinstance(update_service, dict) else None
+    )
+    if not isinstance(upload_uri, str) or not upload_uri.strip():
+        upload_uri = "/redfish/v1/UpdateService/MultipartUpdate"
+
     response = RedfishRestResponse(None, None)
     with open(fw_file_path, "rb") as firmware:
         print("Sending file...", flush=True)
@@ -52,7 +65,7 @@ def update_rsc_firmware(rsc: Rsc, fw_file_path: str) -> RedfishRestResponse:
         # firmware in very old RSC versions. The following code is a workaround
         # to upload the firmware file using requests.
         resp = requests.post(
-            f"https://{rsc.address.split('//')[1]}/redfish/v1/UpdateService/MultipartUpdate",
+            f"https://{rsc.address.split('//')[1]}{upload_uri}",
             files=files,
             headers=headers,
             verify=False,
@@ -78,4 +91,5 @@ def update_rsc_firmware(rsc: Rsc, fw_file_path: str) -> RedfishRestResponse:
 
 def update_manager(rsc: Rsc, body: dict) -> RedfishRestResponse:
     """Update the RSC manager information"""
-    return rsc.perform_redfish_patch("/redfish/v1/Managers/1", body)
+    manager_uri = get_default_uri(rsc, "/redfish/v1/Managers")
+    return rsc.perform_redfish_patch(manager_uri, body)

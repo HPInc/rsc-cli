@@ -4,6 +4,7 @@ from typing import List
 from pathlib import Path
 from ...models import certificate
 from ...comm.remote_system_controller import Rsc
+from .collection import get_default_uri
 
 
 def add_trusted_certificate(rsc: Rsc, cert_file_path: str):
@@ -18,7 +19,8 @@ def add_trusted_certificate(rsc: Rsc, cert_file_path: str):
     with open(cert_path, "r", encoding="utf-8") as cert_file:
         cert_data = cert_file.read()
     body = {"CertificateString": cert_data, "CertificateType": "PEM"}
-    rsc.perform_redfish_post("/redfish/v1/Managers/1/TrustedCertificates", body)
+    manager_uri = get_default_uri(rsc, "/redfish/v1/Managers")
+    rsc.perform_redfish_post(f"{manager_uri}/TrustedCertificates", body)
 
 
 def get_trusted_certificates(rsc: Rsc) -> List[certificate.Certificate]:
@@ -44,4 +46,5 @@ def get_trusted_certificates(rsc: Rsc) -> List[certificate.Certificate]:
 
 def delete_trusted_certificate(rsc: Rsc, cert_id: str):
     """Delete a trusted certificate"""
-    rsc.perform_redfish_delete(f"/redfish/v1/Managers/1/TrustedCertificates/{cert_id}")
+    manager_uri = get_default_uri(rsc, "/redfish/v1/Managers")
+    rsc.perform_redfish_delete(f"{manager_uri}/TrustedCertificates/{cert_id}")
