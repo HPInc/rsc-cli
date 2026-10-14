@@ -45,17 +45,24 @@ def test_invalid_collection(data, operation):
 @pytest.mark.parametrize(
     "data,expected_uri",
     [
-        ({"Members": []}, None),
         ({"Members": [{"@odata.id": "/a"}, {"@odata.id": "/b"}]}, "/a"),
         ({"Members": [{"@odata.id": "/a"}], "Members@odata.nextLink": "/next"}, "/a"),
     ],
 )
-def test_get_default_uri_returns_first_member_or_none(data, expected_uri):
+def test_get_default_uri_returns_first_member(data, expected_uri):
     rsc = MagicMock(spec=Rsc)
     rsc.perform_redfish_get.return_value.dict = data
 
     assert get_default_uri(rsc, "/redfish/v1/Managers") == expected_uri
     rsc.perform_redfish_get.assert_called_once_with("/redfish/v1/Managers")
+
+
+def test_get_default_uri_raises_when_collection_is_empty():
+    rsc = MagicMock(spec=Rsc)
+    rsc.perform_redfish_get.return_value.dict = {"Members": []}
+
+    with pytest.raises(RedfishError, match="no members found"):
+        get_default_uri(rsc, "/redfish/v1/Managers")
 
 
 @pytest.mark.parametrize(

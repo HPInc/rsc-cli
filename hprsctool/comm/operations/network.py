@@ -9,15 +9,17 @@ from .collection import get_collection, get_default_uri
 
 
 def get_manager_ethernet_interface_uri(rsc: Rsc) -> str:
-    """Select br0 from the collection members, otherwise use eth0."""
+    """Select br0 from the collection members, otherwise use the first member."""
     manager_uri = get_default_uri(rsc, "/redfish/v1/Managers")
     collection_uri = f"{manager_uri}/EthernetInterfaces"
     members = get_collection(rsc, collection_uri)["Members"]
+    if not members:
+        raise RedfishError(f"No Ethernet interfaces found in {collection_uri}")
     for member in members:
         uri = member["@odata.id"]
-        if "br0" in uri:
+        if uri.rstrip("/").rsplit("/", 1)[-1] == "br0":
             return uri
-    return collection_uri + "/eth0"
+    return members[0]["@odata.id"]
 
 def get_manager_ethernet_interface(rsc: Rsc) -> ethernet_interface.EthernetInterface:
     """Get the RSC ethernet interface information"""

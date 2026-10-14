@@ -27,7 +27,7 @@ def response(data):
         (["eth0", "br0"], "br0"),
         (["br0", "eth0"], "br0"),
         (["br0"], "br0"),
-        (["eth1", "eth0"], "eth0"),
+        (["eth1", "eth0"], "eth1"),
     ],
 )
 @pytest.mark.parametrize("method", ["get", "patch"])
@@ -71,6 +71,49 @@ def test_returns_immediately_when_br0_is_found(mock_rsc):
         call("/redfish/v1/Managers"),
         call(COLLECTION_URI),
     ]
+
+
+@pytest.mark.parametrize(
+    "member_uris,expected_uri",
+    [
+        # br0 as a substring of the leaf is not a br0 match; fall back to first member
+        ([f"{COLLECTION_URI}/eth0", f"{COLLECTION_URI}/br0-extra"], f"{COLLECTION_URI}/eth0"),
+        ([f"{COLLECTION_URI}/eth0", f"{COLLECTION_URI}/xbr0"], f"{COLLECTION_URI}/eth0"),
+        # br0 in a non-leaf path segment does not match
+        ([f"{COLLECTION_URI}/eth0", f"{COLLECTION_URI}/br0/eth0"], f"{COLLECTION_URI}/eth0"),
+        # a trailing slash on the leaf still matches br0
+        ([f"{COLLECTION_URI}/br0/"], f"{COLLECTION_URI}/br0/"),
+    ],
+)
+def test_br0_matches_only_the_uri_leaf(mock_rsc, member_uris, expected_uri):
+    mock_rsc.perform_redfish_get.side_effect = [
+        response({"Members": [{"@odata.id": MANAGER_URI}]}),
+        response({"Members": [{"@odata.id": uri} for uri in member_uris]}),
+    ]
+
+    assert network.get_manager_ethernet_interface_uri(mock_rsc) == expected_uri
+
+
+def test_falls_back_to_first_member_when_br0_is_absent(mock_rsc):
+    mock_rsc.perform_redfish_get.side_effect = [
+        response({"Members": [{"@odata.id": MANAGER_URI}]}),
+        response({"Members": [
+            {"@odata.id": f"{COLLECTION_URI}/eth1"},
+            {"@odata.id": f"{COLLECTION_URI}/eth0"},
+        ]}),
+    ]
+
+    assert network.get_manager_ethernet_interface_uri(mock_rsc) == f"{COLLECTION_URI}/eth1"
+
+
+def test_raises_when_collection_has_no_members(mock_rsc):
+    mock_rsc.perform_redfish_get.side_effect = [
+        response({"Members": [{"@odata.id": MANAGER_URI}]}),
+        response({"Members": []}),
+    ]
+
+    with pytest.raises(RedfishError, match="No Ethernet interfaces found"):
+        network.get_manager_ethernet_interface_uri(mock_rsc)
 
 
 @pytest.mark.parametrize("failure_stage", ["collection", "get", "patch"])

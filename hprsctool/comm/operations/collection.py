@@ -17,5 +17,6 @@ def get_default_uri(rsc: Rsc, collection_uri: str) -> str:
     """Get the first URI in a Redfish Collection."""
     data = get_collection(rsc, collection_uri)
     members = data["Members"]
-    if members:
-        return members[0]["@odata.id"]
+    if not members:
+        raise RedfishError(f"Discovery failed for {collection_uri}: no members found")
+    return members[0]["@odata.id"]

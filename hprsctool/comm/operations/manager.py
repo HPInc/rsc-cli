@@ -1,6 +1,8 @@
 """Manager commands"""
 
+import json
 from pathlib import Path
+from urllib.parse import urljoin
 
 import requests
 from redfish.rest.v1 import RestResponse as RedfishRestResponse
@@ -56,16 +58,28 @@ def update_rsc_firmware(rsc: Rsc, fw_file_path: str) -> RedfishRestResponse:
     if not isinstance(upload_uri, str) or not upload_uri.strip():
         upload_uri = "/redfish/v1/UpdateService/MultipartUpdate"
 
+    update_parameters = {}
     response = RedfishRestResponse(None, None)
     with open(fw_file_path, "rb") as firmware:
         print("Sending file...", flush=True)
-        files = {"UpdateFile": firmware}
+        files = {
+            "UpdateParameters": (
+                None,
+                json.dumps(update_parameters),
+                "application/json",
+            ),
+            "UpdateFile": (
+                Path(fw_file_path).name,
+                firmware,
+                "application/octet-stream",
+            ),
+        }
         headers = {"X-Auth-Token": rsc.client.get_session_key()}
         # Using the self.client.post method directly fails to upload the
         # firmware in very old RSC versions. The following code is a workaround
         # to upload the firmware file using requests.
         resp = requests.post(
-            f"https://{rsc.address.split('//')[1]}{upload_uri}",
+            urljoin(rsc.address, upload_uri),
             files=files,
             headers=headers,
             verify=False,

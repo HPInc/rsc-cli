@@ -1,6 +1,9 @@
 """Tests for UpdateService firmware upload endpoint discovery."""
 
-from unittest.mock import MagicMock, patch
+import json
+from pathlib import Path
+from unittest.mock import MagicMock, call, patch
+from urllib.parse import urljoin
 
 import pytest
 
@@ -31,11 +34,14 @@ def fixture_firmware_file(tmp_path):
         "/redfish/v1/UpdateService/MultipartUpdate",
         "/redfish/v1/UpdateService/update-multipart",
         "/custom/firmware-upload",
+        "https://other-host.example/redfish/v1/UpdateService/update-multipart",
     ],
 )
 def test_upload_uses_advertised_endpoint(mock_rsc, firmware_file, upload_uri):
-    mock_rsc.perform_redfish_get.return_value.dict = {"MultipartHttpPushUri": upload_uri}
-    expected_url = mock_rsc.address + upload_uri
+    mock_rsc.perform_redfish_get.side_effect = [
+        MagicMock(dict={"MultipartHttpPushUri": upload_uri}),
+    ]
+    expected_url = urljoin(mock_rsc.address, upload_uri)
     task_response = MagicMock()
     with patch("hprsctool.comm.operations.manager.requests.post") as mock_post, patch(
         "hprsctool.comm.operations.manager.RedfishRestResponse",
@@ -43,16 +49,22 @@ def test_upload_uses_advertised_endpoint(mock_rsc, firmware_file, upload_uri):
     ):
         update_rsc_firmware(mock_rsc, firmware_file)
 
-    mock_rsc.perform_redfish_get.assert_called_once_with("/redfish/v1/UpdateService")
+    assert mock_rsc.perform_redfish_get.call_args_list == [
+        call("/redfish/v1/UpdateService"),
+    ]
     mock_post.assert_called_once()
     args, kwargs = mock_post.call_args
     assert args == (expected_url,)
     assert kwargs["headers"] == {"X-Auth-Token": "session-token"}
     assert kwargs["timeout"] == 3600
     assert kwargs["verify"] is False
-    assert list(kwargs["files"]) == ["UpdateFile"]
-    assert kwargs["files"]["UpdateFile"].name == firmware_file
-    assert kwargs["files"]["UpdateFile"].closed
+    assert list(kwargs["files"]) == ["UpdateParameters", "UpdateFile"]
+    assert json.loads(kwargs["files"]["UpdateParameters"][1]) == {}
+    update_file_name, update_file, update_file_type = kwargs["files"]["UpdateFile"]
+    assert update_file_name == Path(firmware_file).name
+    assert update_file.name == firmware_file
+    assert update_file.closed
+    assert update_file_type == "application/octet-stream"
     mock_post.return_value.raise_for_status.assert_called_once_with()
     mock_rsc.monitor_task.assert_called_once_with(task_response)
 
@@ -69,16 +81,20 @@ def test_upload_uses_advertised_endpoint(mock_rsc, firmware_file, upload_uri):
     ],
 )
 def test_missing_endpoint_uses_legacy_fallback(mock_rsc, firmware_file, data):
-    mock_rsc.perform_redfish_get.return_value.dict = data
+    mock_rsc.perform_redfish_get.side_effect = [
+        MagicMock(dict=data),
+    ]
     with patch("hprsctool.comm.operations.manager.requests.post") as mock_post, patch(
         "hprsctool.comm.operations.manager.RedfishRestResponse"
     ):
         update_rsc_firmware(mock_rsc, firmware_file)
 
-    mock_rsc.perform_redfish_get.assert_called_once_with("/redfish/v1/UpdateService")
+    assert mock_rsc.perform_redfish_get.call_args_list == [
+        call("/redfish/v1/UpdateService"),
+    ]
     mock_post.assert_called_once()
     assert mock_post.call_args.args == (
-        f"{mock_rsc.address}/redfish/v1/UpdateService/MultipartUpdate",
+        urljoin(mock_rsc.address, "/redfish/v1/UpdateService/MultipartUpdate"),
     )
     mock_rsc.monitor_task.assert_called_once()
 
