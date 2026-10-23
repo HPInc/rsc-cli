@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, call
 import pytest
 
 from hprsctool.comm.operations import cert, manager, network, system, trusted_cert
-from hprsctool.comm.operations.collection import get_collection, get_default_uri
+from hprsctool.comm.operations.collection import get_collection, get_first_uri
 from hprsctool.comm.remote_system_controller import RedfishError, Rsc
 
 
@@ -19,7 +19,7 @@ def test_single_member_discovery(resource, member_id):
         "Members": [{"@odata.id": member_uri}]
     }
 
-    assert get_default_uri(rsc, collection_uri) == member_uri
+    assert get_first_uri(rsc, collection_uri) == member_uri
     rsc.perform_redfish_get.assert_called_once_with(collection_uri)
 
 
@@ -33,7 +33,7 @@ def test_single_member_discovery(resource, member_id):
         {"Members": {}},
     ],
 )
-@pytest.mark.parametrize("operation", [get_collection, get_default_uri])
+@pytest.mark.parametrize("operation", [get_collection, get_first_uri])
 def test_invalid_collection(data, operation):
     rsc = MagicMock(spec=Rsc)
     rsc.perform_redfish_get.return_value.dict = data
@@ -49,20 +49,20 @@ def test_invalid_collection(data, operation):
         ({"Members": [{"@odata.id": "/a"}], "Members@odata.nextLink": "/next"}, "/a"),
     ],
 )
-def test_get_default_uri_returns_first_member(data, expected_uri):
+def test_get_first_uri_returns_first_member(data, expected_uri):
     rsc = MagicMock(spec=Rsc)
     rsc.perform_redfish_get.return_value.dict = data
 
-    assert get_default_uri(rsc, "/redfish/v1/Managers") == expected_uri
+    assert get_first_uri(rsc, "/redfish/v1/Managers") == expected_uri
     rsc.perform_redfish_get.assert_called_once_with("/redfish/v1/Managers")
 
 
-def test_get_default_uri_raises_when_collection_is_empty():
+def test_get_first_uri_raises_when_collection_is_empty():
     rsc = MagicMock(spec=Rsc)
     rsc.perform_redfish_get.return_value.dict = {"Members": []}
 
     with pytest.raises(RedfishError, match="no members found"):
-        get_default_uri(rsc, "/redfish/v1/Managers")
+        get_first_uri(rsc, "/redfish/v1/Managers")
 
 
 @pytest.mark.parametrize(
@@ -85,7 +85,7 @@ def test_discovery_propagates_get_failure():
     rsc.perform_redfish_get.side_effect = RedfishError("GET failed")
 
     with pytest.raises(RedfishError, match="GET failed"):
-        get_default_uri(rsc, "/redfish/v1/Managers")
+        get_first_uri(rsc, "/redfish/v1/Managers")
 
 
 @pytest.fixture(name="mock_rsc")

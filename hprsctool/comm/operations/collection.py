@@ -13,7 +13,7 @@ def get_collection(rsc: Rsc, collection_uri: str) -> dict:
     return data
 
 
-def get_default_uri(rsc: Rsc, collection_uri: str) -> str:
+def get_first_uri(rsc: Rsc, collection_uri: str) -> str:
     """Get the first URI in a Redfish Collection."""
     data = get_collection(rsc, collection_uri)
     members = data["Members"]

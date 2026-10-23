@@ -5,12 +5,12 @@ from redfish.rest.v1 import RestResponse as RedfishRestResponse
 from ...models import ethernet_interface
 from ...models.manager_network_protocol import ManagerNetworkProtocol
 from ...comm.remote_system_controller import RedfishError, Rsc
-from .collection import get_collection, get_default_uri
+from .collection import get_collection, get_first_uri
 
 
 def get_manager_ethernet_interface_uri(rsc: Rsc) -> str:
     """Select br0 from the collection members, otherwise use the first member."""
-    manager_uri = get_default_uri(rsc, "/redfish/v1/Managers")
+    manager_uri = get_first_uri(rsc, "/redfish/v1/Managers")
     collection_uri = f"{manager_uri}/EthernetInterfaces"
     members = get_collection(rsc, collection_uri)["Members"]
     if not members:
@@ -37,7 +37,7 @@ def set_manager_ethernet_interface(rsc: Rsc, data: dict) -> RedfishRestResponse:
 
 def get_manager_network_protocol(rsc: Rsc) -> ManagerNetworkProtocol:
     """Get the RSC network protocol information"""
-    manager_uri = get_default_uri(rsc, "/redfish/v1/Managers")
+    manager_uri = get_first_uri(rsc, "/redfish/v1/Managers")
     return ManagerNetworkProtocol(
         rsc.perform_redfish_get(f"{manager_uri}/NetworkProtocol").dict
     )
@@ -45,5 +45,5 @@ def get_manager_network_protocol(rsc: Rsc) -> ManagerNetworkProtocol:
 
 def set_manager_network_protocol(rsc: Rsc, data: dict) -> RedfishRestResponse:
     """Set the RSC network protocol information"""
-    manager_uri = get_default_uri(rsc, "/redfish/v1/Managers")
+    manager_uri = get_first_uri(rsc, "/redfish/v1/Managers")
     return rsc.perform_redfish_patch(f"{manager_uri}/NetworkProtocol", data)

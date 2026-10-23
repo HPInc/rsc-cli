@@ -10,12 +10,12 @@ from redfish.rest.v1 import RestResponse as RedfishRestResponse
 from ...comm.remote_system_controller import RedfishError, Rsc
 from ...comm import redfish_messages
 from ...models.manager import Manager
-from .collection import get_default_uri
+from .collection import get_first_uri
 
 
 def get_manager(rsc: Rsc) -> Manager:
     """Get the RSC manager information"""
-    manager_uri = get_default_uri(rsc, "/redfish/v1/Managers")
+    manager_uri = get_first_uri(rsc, "/redfish/v1/Managers")
     return Manager(rsc.perform_redfish_get(manager_uri).dict)
 
 
@@ -27,7 +27,7 @@ def change_admin_password(rsc: Rsc, new_password: str):
 
 def restart(rsc: Rsc):
     """Restart the RSC"""
-    manager_uri = get_default_uri(rsc, "/redfish/v1/Managers")
+    manager_uri = get_first_uri(rsc, "/redfish/v1/Managers")
     rsc.perform_redfish_post(
         f"{manager_uri}/Actions/Manager.Reset",
         {"ResetType": "ForceRestart"},
@@ -36,7 +36,7 @@ def restart(rsc: Rsc):
 
 def factory_reset(rsc: Rsc):
     """Factory-reset the RSC"""
-    manager_uri = get_default_uri(rsc, "/redfish/v1/Managers")
+    manager_uri = get_first_uri(rsc, "/redfish/v1/Managers")
     rsc.perform_redfish_post(
         f"{manager_uri}/Actions/Manager.ResetToDefaults",
         {"ResetToDefaultsType": "ResetAll"},
@@ -105,5 +105,5 @@ def update_rsc_firmware(rsc: Rsc, fw_file_path: str) -> RedfishRestResponse:
 
 def update_manager(rsc: Rsc, body: dict) -> RedfishRestResponse:
     """Update the RSC manager information"""
-    manager_uri = get_default_uri(rsc, "/redfish/v1/Managers")
+    manager_uri = get_first_uri(rsc, "/redfish/v1/Managers")
     return rsc.perform_redfish_patch(manager_uri, body)
