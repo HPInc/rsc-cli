@@ -1,5 +1,5 @@
 """Test cases for system operations."""
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 
@@ -8,16 +8,25 @@ from hprsctool.models.system import System
 
 @pytest.fixture(name="mock_rsc")
 def fixture_mock_rsc():
-    return MagicMock()
+    rsc = MagicMock()
+    rsc.perform_redfish_get.return_value.dict = {
+        "Members": [{"@odata.id": "/redfish/v1/Systems/1"}]
+    }
+    return rsc
 
 def test_get_system(mock_rsc):
     mock_response = MagicMock()
     mock_response.dict = {"UUID": "1", "Model": "Test System"}
-    mock_rsc.perform_redfish_get.return_value = mock_response
+    mock_rsc.perform_redfish_get.side_effect = [
+        mock_rsc.perform_redfish_get.return_value, mock_response
+    ]
 
     with patch("hprsctool.comm.operations.system.System", return_value=System(mock_response.dict)):
         system = get_system(mock_rsc)
-        mock_rsc.perform_redfish_get.assert_called_once_with("/redfish/v1/Systems/1")
+        assert mock_rsc.perform_redfish_get.call_args_list == [
+            call("/redfish/v1/Systems"),
+            call("/redfish/v1/Systems/1"),
+        ]
         assert system.uuid == "1"
         assert system.model == "Test System"
 
@@ -29,6 +38,7 @@ def test_set_system_power_on(mock_rsc):
             "/redfish/v1/Systems/1/Actions/ComputerSystem.Reset",
             {"ResetType": state}
         )
+        mock_rsc.perform_redfish_get.assert_called_once_with("/redfish/v1/Systems")
 
 def test_set_system_power_off(mock_rsc):
     state = "Off"
@@ -38,3 +48,4 @@ def test_set_system_power_off(mock_rsc):
             "/redfish/v1/Systems/1/Actions/ComputerSystem.Reset",
             {"ResetType": state}
         )
+        mock_rsc.perform_redfish_get.assert_called_once_with("/redfish/v1/Systems")
